@@ -166,11 +166,31 @@ print(evaluer_classifieur(table(test_data$defaut, predict(model_tree, test_data,
 # 6. APPROCHE PAR CLUSTERING
 ############################
 
-# Préparation des données pour le clustering
-donnees_clustering <- subset(donnees, select = -c(defaut, age_cat, revenus_cat, debcred_cat, debcarte_cat, autres_cat))
+# Préparation des données
+matrix <- daisy(donnees, metric = "gower")
+summary(matrix)
+
+# Clustering
+kmeans <- kmeans(matrix, centers = 4)
+
+# Visualisation des clusters
+table(kmeans$cluster, donnees$defaut)
+qplot(kmeans$cluster, data = donnees, fill = defaut, binwidth = 0.5)
+
+# Analyse des clusters
+qplot(age, debcred, data = donnees, color = kmeans$cluster)
+qplot(revenus, debcred, data = donnees, color = kmeans$cluster)
+qplot(emploi, debcred, data = donnees, color = kmeans$cluster)
+
 
 ################
 # 7. PREDICTIONS
 ################
 
-
+# K-means
+var_predictives <- c("age", "adresse", "revenus", "debcred", "debcarte", "autres")
+donnees_KM <- donnees[, var_predictives]
+for (i in 1:length(var_predictives)) {
+  donnees_KM[, i] <- scale(donnees_KM[, i])
+  mediane <- median(donnees_KM[, i])
+}
