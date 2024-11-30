@@ -2,20 +2,20 @@
 # Auteurs : VALLEIX Benjamin et GIRAUDIER Augustin
 
 # Installation des bibliothèques nécessaires
-install.packages(c("tidyverse", "caret", "cluster", "pROC", "randomForest", "e1071", "kernlab"))
+install.packages(c("ggplot2", "C50", "cluster", "rpart", "rpart.plot", "tree","tsne"))
 
 # Chargement des bibliothèques nécessaires
-library(tidyverse)   # Pour manipulation de données
-library(caret)       # Pour preprocessing et machine learning
-library(cluster)     # Pour clustering
-library(pROC)        # Pour courbes ROC
-library(randomForest)# Pour Random Forest
-library(e1071)       # Pour SVM
-library(kernlab)     # Pour SVM
+library(ggplot2)
+library(C50)
+library(cluster)
+library(rpart)
+library(rpart.plot)
+library(tree)
+library(tsne)
 
 # 1. Chargement et exploration des données
-donnees <- read.csv("dataset/projet.csv", sep = ",", header = TRUE)
-donnees_prediction <- read.csv("dataset/projet_new.csv", sep = ",", header = TRUE)
+donnees <- read.csv("dataset/projet.csv", header = TRUE, sep = ",", dec = ".", stringsAsFactors = T)
+donnees_prediction <- read.csv("dataset/projet_new.csv", sep = ",", dec = ".", stringsAsFactors = TRUE)
 
 # Vérification des données
 str(donnees)
@@ -30,9 +30,49 @@ donnees$adresse[donnees$adresse == 999] <- NA
 donnees$age <- ifelse(is.na(donnees$age), median(donnees$age, na.rm = TRUE), donnees$age)
 donnees$adresse <- ifelse(is.na(donnees$adresse), median(donnees$adresse, na.rm = TRUE), donnees$adresse)
 
-# Conversion de variables catégorielles
-donnees$education <- factor(donnees$education)
-donnees$defaut <- factor(donnees$defaut)
+# Suppression des variables non pertinentes
+donnees <- subset(donnees, select = -c(client, categorie))
+
+# Création de catégories pour les variables continues (pour une meilleure analyse des proportions)
+donnees$age_cat <- cut(donnees$age,
+                                   breaks=c(0, 25, 35, 45, 55, 100),
+                                   labels=c("18-25", "26-35", "36-45", "46-55", "56+"))
+
+donnees$revenus_cat <- cut(donnees$revenus,
+                                       breaks=c(0, 25, 50, 100, 200, max(donnees$revenus)),
+                                       labels=c("0-25k", "25-50k", "50-100k", "100-200k", ">200k"))
+
+donnees$debcred_cat <- cut(donnees$debcred,
+                                       breaks=c(0, 5, 10, 15, 20, max(donnees$debcred)),
+                                       labels=c("0-5", "5-10", "10-15", "15-20", ">20"))
+
+donnees$debcarte_cat <- cut(donnees$debcarte,
+                                        breaks=c(0,1,2,3,4,6,10,15,20,max(donnees$debcarte)),
+                                        labels=c("0","1","2","3","4","5","6","7","8+"))
+
+donnees$autres_cat <- cut(donnees$autres,
+                                      breaks=c(0,1,2,3,4,6,10,15,20,max(donnees$autres)),
+                                      labels=c("0","1","2","3","4","5","6","7","8+"))
+
+# Analyse exploratoire des données
+qplot(age, data=donnees, fill=defaut)
+qplot(education, data=donnees, fill=defaut)
+qplot(emploi, data=donnees, fill=defaut)
+qplot(adresse, data=donnees, fill=defaut)
+qplot(revenus, data=donnees, fill=defaut)
+qplot(debcred, data=donnees, fill=defaut)
+qplot(debcarte, data=donnees, fill=defaut)
+qplot(autres, data=donnees, fill=defaut)
+
+# Analyse des proportions de défauts par catégorie
+prop.table(table(donnees$age_cat, donnees$defaut))*100
+prop.table(table(donnees$education, donnees$defaut))*100
+prop.table(table(donnees$emploi, donnees$defaut))*100
+prop.table(table(donnees$adresse, donnees$defaut))*100
+prop.table(table(donnees$revenus_cat, donnees$defaut))*100
+prop.table(table(donnees$debcred_cat, donnees$defaut))*100
+prop.table(table(donnees$debcarte_cat, donnees$defaut))*100
+prop.table(table(donnees$autres_cat, donnees$defaut))*100
 
 # 3. Clustering
 # Sélection des variables pour clustering
