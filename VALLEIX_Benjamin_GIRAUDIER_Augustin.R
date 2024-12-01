@@ -214,13 +214,59 @@ table(kmeans$cluster, groupes)
 
 ## K-means ##
 var_predictives <- c("age", "adresse", "revenus", "debcred", "debcarte", "autres")
-donnees_KM <- donnees[, var_predictives]
-for(col in vars_num) {
-  median_val <- median(donnees_KM[,col], na.rm = TRUE)
-  donnees_KM[is.na(donnees_KM[,col]), col] <- median_val
+train_data_KM <- train_data[var_predictives]
+for(col in var_predictives) {
+  median_val <- median(train_data_KM[,col], na.rm = TRUE)
+  train_data_KM[is.na(train_data_KM[,col]), col] <- median_val
 }
 
 # Prédiction
-km <- kmeans(donnees_KM, centers=5)
-donnees$cluster_km <- km$cluster
+km <- kmeans(train_data_KM, centers=5)
+train_data$cluster_km <- km$cluster
+
+test_data_KM <- test_data[var_predictives]
+for(col in var_predictives) {
+  test_data_KM[is.na(test_data_KM[,col]), col] <- median_val
+}
+
+distances <- matrix(nrow=nrow(test_data_KM), ncol=5)
+for(i in 1:5) {
+  distances[,i] <- apply(test_data_KM, 1, function(x) sum((x - km$centers[i,])^2))
+}
+test_data$cluster_km <- max.col(-distances)
+
+tree_kmeans <- C5.0(defaut~., train_data, trials=10,
+                    control = C5.0Control(minCases = 10, noGlobalPruning = TRUE))
+
+test_kmeans <- predict(tree_kmeans, test_data, type="class")
+print("Performance avec K-means final:")
+print(evaluation_classifieur(table(test_data$defaut, test_kmeans)))
+
+## Fichier de prédiction
+donnees_predict_km <- donnees_prediction[var_predictives]
+for(col in var_predictives) {
+  donnees_predict_km[is.na(donnees_predict_km[,col]), col] <- median_val
+}
+
+distances <- matrix(nrow=nrow(donnees_predict_km), ncol=5)
+for(i in 1:5) {
+  distances[,i] <- apply(donnees_predict_km, 1, function(x) sum((x - km$centers[i,])^2))
+}
+donnees_prediction$cluster_km <- max.col(-distances)
+
+# 8. Prédiction sur le nouveau jeu de données
+predictions_finales <- predict(tree_kmeans, donnees_prediction, type = "prob")
+predictions_classe <- predict(tree_kmeans, donnees_prediction, type = "class")
+
+# Préparation du fichier de résultats
+resultats_csv <- data.frame(
+  client = donnees_prediction$client,
+  classe_predite = predictions_classe,
+  probabilite_defaut = predictions_finales$Oui
+)
+
+# Écriture du fichier CSV de résultats
+write.csv(resultats_csv, file = "VALLEIX_Benjamin_GIRAUDIER_Augustin.csv", row.names = FALSE)
+
+
 
