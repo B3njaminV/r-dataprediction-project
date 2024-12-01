@@ -267,6 +267,3 @@ resultats_csv <- data.frame(
 
 # Écriture du fichier CSV de résultats
 write.csv(resultats_csv, file = "VALLEIX_Benjamin_GIRAUDIER_Augustin.csv", row.names = FALSE)
-
-
-
