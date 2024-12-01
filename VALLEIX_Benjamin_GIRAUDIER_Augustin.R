@@ -42,8 +42,8 @@ donnees_prediction$age <- ifelse(is.na(donnees_prediction$age), median(donnees$a
 donnees_prediction$adresse <- ifelse(is.na(donnees_prediction$adresse), median(donnees$adresse, na.rm = TRUE), donnees_prediction$adresse)
 
 # Suppression des variables non pertinentes
-donnees <- subset(donnees, select = -c(client, categorie))
-donnees_prediction <- subset(donnees_prediction, select = -c(client, categorie))
+donnees <- subset(donnees, select = -c(client))
+donnees_prediction <- subset(donnees_prediction, select = -c(categorie))
 
 # Création de catégories pour les variables continues (pour une meilleure analyse des proportions)
 donnees$age_cat <- cut(donnees$age,
@@ -255,14 +255,14 @@ for(i in 1:5) {
 donnees_prediction$cluster_km <- max.col(-distances)
 
 # 8. Prédiction sur le nouveau jeu de données
-predictions_finales <- predict(tree_kmeans, donnees_prediction, type = "prob")
 predictions_classe <- predict(tree_kmeans, donnees_prediction, type = "class")
+predictions_finales <- predict(tree_kmeans, donnees_prediction, type = "prob")
 
 # Préparation du fichier de résultats
 resultats_csv <- data.frame(
-  client = donnees_prediction$client,
-  classe_predite = predictions_classe,
-  probabilite_defaut = predictions_finales$Oui
+  "client" = donnees_prediction$client,
+  "defaut" = predictions_classe,
+  "prob_defaut" = predictions_finales[,2]
 )
 
 # Écriture du fichier CSV de résultats
