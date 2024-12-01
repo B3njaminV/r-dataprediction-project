@@ -197,16 +197,9 @@ plot(hierarchique_div)
 rect.hclust(hierarchique_div, k = 4)
 hierarchique_divisif <- cutree(hierarchique_div, k = 4)
 
-### CLUSTERING PAR DENDROGRAMME ###
-dendrogramme <- as.dendrogram(hierarchique)
-coupage <- cut(dendrogramme, h = 4)
-plot(coupage)
-groupes <- cutree(coupage, k = 4)
-
 # Comparaison des clusters
 table(kmeans$cluster, hierarchique_agg)
 table(kmeans$cluster, hierarchique_divisif)
-table(kmeans$cluster, groupes)
 
 ################
 # 7. PREDICTIONS
@@ -267,3 +260,8 @@ resultats_csv <- data.frame(
 
 # Écriture du fichier CSV de résultats
 write.csv(resultats_csv, file = "VALLEIX_Benjamin_GIRAUDIER_Augustin.csv", row.names = FALSE)
+
+print("Distribution des prédictions :")
+print(table(predictions_classe))
+print("Résumé des probabilités :")
+print(summary(predictions_finales[,2]))
