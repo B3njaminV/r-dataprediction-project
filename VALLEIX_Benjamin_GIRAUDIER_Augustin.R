@@ -158,9 +158,9 @@ print(table(test_data$defaut, predict(model_rpart, test_data, type = "class")))
 print(table(test_data$defaut, predict(model_tree, test_data, type = "class")))
 
 # Évaluation des modèles
-print(evaluer_classifieur(table(test_data$defaut, predict(model_c50, test_data, type = "class"))))
-print(evaluer_classifieur(table(test_data$defaut, predict(model_rpart, test_data, type = "class"))))
-print(evaluer_classifieur(table(test_data$defaut, predict(model_tree, test_data, type = "class"))))
+print(evaluation_classifieur(table(test_data$defaut, predict(model_c50, test_data, type = "class"))))
+print(evaluation_classifieur(table(test_data$defaut, predict(model_rpart, test_data, type = "class"))))
+print(evaluation_classifieur(table(test_data$defaut, predict(model_tree, test_data, type = "class"))))
 
 ############################
 # 6. APPROCHE PAR CLUSTERING
@@ -170,7 +170,7 @@ print(evaluer_classifieur(table(test_data$defaut, predict(model_tree, test_data,
 matrix <- daisy(donnees, metric = "gower")
 summary(matrix)
 
-# Clustering
+### K-means ###
 kmeans <- kmeans(matrix, centers = 4)
 
 # Visualisation des clusters
@@ -182,15 +182,45 @@ qplot(age, debcred, data = donnees, color = kmeans$cluster)
 qplot(revenus, debcred, data = donnees, color = kmeans$cluster)
 qplot(emploi, debcred, data = donnees, color = kmeans$cluster)
 
+donnees_clustered <- data.frame(donnees)
+donnees_clustered$Cluster <- kmeans$cluster
+
+### CLUSTERING HIERARCHIQUE AGGLOMERATIF ###
+hierarchique <- agnes(matrix, method = "ward")
+plot(hierarchique)
+rect.hclust(hierarchique, k = 4)
+hierarchique_agg <- cutree(hierarchique, k = 4)
+
+### CLUSTERING HIERARCHIQUE DIVISIF ###
+hierarchique_div <- diana(matrix, diss = TRUE)
+plot(hierarchique_div)
+rect.hclust(hierarchique_div, k = 4)
+hierarchique_divisif <- cutree(hierarchique_div, k = 4)
+
+### CLUSTERING PAR DENDROGRAMME ###
+dendrogramme <- as.dendrogram(hierarchique)
+coupage <- cut(dendrogramme, h = 4)
+plot(coupage)
+groupes <- cutree(coupage, k = 4)
+
+# Comparaison des clusters
+table(kmeans$cluster, hierarchique_agg)
+table(kmeans$cluster, hierarchique_divisif)
+table(kmeans$cluster, groupes)
 
 ################
 # 7. PREDICTIONS
 ################
 
-# K-means
+## K-means ##
 var_predictives <- c("age", "adresse", "revenus", "debcred", "debcarte", "autres")
 donnees_KM <- donnees[, var_predictives]
-for (i in 1:length(var_predictives)) {
-  donnees_KM[, i] <- scale(donnees_KM[, i])
-  mediane <- median(donnees_KM[, i])
+for(col in vars_num) {
+  median_val <- median(donnees_KM[,col], na.rm = TRUE)
+  donnees_KM[is.na(donnees_KM[,col]), col] <- median_val
 }
+
+# Prédiction
+km <- kmeans(donnees_KM, centers=5)
+donnees$cluster_km <- km$cluster
+
